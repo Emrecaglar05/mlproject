@@ -7,6 +7,10 @@ import pandas as pd  # Veri analizi ve manipülasyonu için pandas kütüphanesi
 from sklearn.model_selection import train_test_split  # Veri setini eğitim ve test olarak bölmek için
 from dataclasses import dataclass  # Veri sınıfları oluşturmak için kullanılan bir decorator
 
+from src.components.veri_dönüşümü import dataTransformation
+from src.components.veri_dönüşümü import dataTransformationConfig
+
+
 
 # Veri enjeksiyonu adımı için gerekli dosya yollarını tutan bir konfigürasyon sınıfı
 @dataclass
