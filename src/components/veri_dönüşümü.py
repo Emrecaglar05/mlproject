@@ -47,9 +47,6 @@ class dataTransformation:
             )
 
             # Kategorik sütunlar için boru hattı (pipeline)
-            # SYNTAX HATASI DÜZELTİLDİ: '1' ve '412' satırları kaldırıldı.
-            # MANTIKSAL HATA DÜZELTİLDİ: OneHotEncoder çıktısı zaten seyrektir (sparse), 
-            # tekrar StandardScaler uygulamak (with_mean=False olsa bile) genellikle gereksizdir ve kaldırıldı.
             cat_pipeline = Pipeline(
                 steps=[
                     ("imputer", SimpleImputer(strategy="most_frequent")),  # 1. Adım: Eksik verileri en sık görülen değerle doldur
