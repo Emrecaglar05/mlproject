@@ -12,15 +12,16 @@ from src.utils import save_object
 from src.exception import CustomException  # Kendi oluşturduğumuz özel hata sınıfı (varsayılıyor)
 from src.logger import logging  # Kendi oluşturduğumuz loglama modülü (varsayılıyor)
 
+
 @dataclass  # Bu dekoratör, __init__ gibi metotları otomatik oluşturan bir sınıf tanımlar
 class dataTransformationConfig:
     # Bu sınıf, veri dönüşümü sürecinde kullanılacak dosya yolları gibi konfigürasyonları saklar
-    preprocessor_obj_file_path = os.path.join('artifacts', "proprocessor.pk1")  # Ön işleyici nesnesinin (pickle dosyası) kaydedileceği yol
+    preprocessor_obj_file_path = os.path.join('artifacts', "preprocessor.pkl")  # ✅ Dosya uzantısı düzeltildi
+
 
 class dataTransformation:
     def __init__(self):
         # Sınıf başlatıldığında (initialize) çağrılır
-        # HATA DÜZELTİLDİ: Sınıfın kendisi değil, bir ÖRNEĞİ (instance) oluşturulmalı.
         self.data_transformation_config = dataTransformationConfig()
 
     def get_data_transformer_object(self):
@@ -51,80 +52,87 @@ class dataTransformation:
                 steps=[
                     ("imputer", SimpleImputer(strategy="most_frequent")),  # 1. Adım: Eksik verileri en sık görülen değerle doldur
                     ("one_hot_encoder", OneHotEncoder(handle_unknown='ignore'))  # 2. Adım: Kategorik verileri One-Hot Encoding ile sayısallaştır
-                    # (handle_unknown='ignore', test verisinde eğitimde olmayan bir kategori gelirse hata vermemesini sağlar)
                 ]
             )
             
             logging.info(f"Categorical columns: {categorical_columns}")
             logging.info(f"Numerical columns: {numerical_columns}")
 
-           
+            # İki pipeline'ı birleştirme
             preprocessor = ColumnTransformer(
                 [
-                    ("num_pipeline", num_pipeline, numerical_columns), # Sayısal sütunlara 'num_pipeline' uygula
-                    ("cat_pipelines", cat_pipeline, categorical_columns) # Kategorik sütunlara 'cat_pipeline' uygula
+                    ("num_pipeline", num_pipeline, numerical_columns),
+                    ("cat_pipeline", cat_pipeline, categorical_columns)
                 ]
             )
 
-            return preprocessor  # 'preprocessor' nesnesini döndür
+            return preprocessor
 
         except Exception as e:
-            raise CustomException(e, sys)  # Hata oluşursa özel hata sınıfımızla yakala ve fırlat
+            raise CustomException(e, sys)
 
     def initiate_data_transformation(self, train_path, test_path):
-        # Bu metot, veri dönüşüm sürecini başlatır
+        '''Veri dönüşüm sürecini başlatır'''
         try:
-            train_df = pd.read_csv(train_path)  # Eğitim verisini CSV dosyasından oku
-            test_df = pd.read_csv(test_path)  # Test verisini CSV dosyasından oku
+            train_df = pd.read_csv(train_path)
+            test_df = pd.read_csv(test_path)
 
             logging.info("Train ve test verileri okundu (Read train and test data completed)")
 
             logging.info("Ön işleyici (preprocessing) nesnesi alınıyor...")
-            # Yukarıdaki 'get_data_transformer_object' metodunu çağır
             preprocessing_obj = self.get_data_transformer_object()
 
-            target_column_name = "math_Score"  # Hedef değişkenin (tahmin edilecek sütun) adı
-            # numerical_columns = ["writing_score", "reading_score"] # Bu satıra burada gerek yok, get_data_transformer_object içinde tanımlı
+            target_column_name = "math_score"  # ✅ Küçük harf düzeltmesi
 
-            # ---- EĞİTİM VERİSİ AYIRMA ----
-            # Eğitim verisinde hedef sütunu (target) ve özellik sütunlarını (features) ayır
+            # ---- Eğitim verisini ayır ----
             input_feature_train_df = train_df.drop(columns=[target_column_name], axis=1)
             target_feature_train_df = train_df[target_column_name]
 
-            # ---- TEST VERİSİ AYIRMA ----
+            # ---- Test verisini ayır ----
             input_feature_test_df = test_df.drop(columns=[target_column_name], axis=1)
             target_feature_test_df = test_df[target_column_name]
 
-            logging.info("Ön işleme (preprocessing) eğitim ve test verisine uygulanıyor.")
+            logging.info("Ön işleme (preprocessing) eğitim ve test verisine uygulanıyor...")
 
-            # EKSİK KISIM EKLENDİ: Dönüşüm işlemlerini uygulama
-            
-            # fit_transform: Eğitim verisi üzerinde hem öğrenir (imputer, scaler vb.) hem de dönüştürür
+            # Dönüşüm işlemleri
             input_feature_train_arr = preprocessing_obj.fit_transform(input_feature_train_df)
-            
-            # transform: Test verisine, SADECE eğitim verisinden öğrendiği parametrelerle dönüştürme uygular
             input_feature_test_arr = preprocessing_obj.transform(input_feature_test_df)
 
             logging.info("Ön işleme tamamlandı.")
 
-            # İşlenmiş özellikleri (input_feature...arr) ve hedefi (target_feature...df) birleştirme
-            # np.c_ (column stack) kullanarak array'leri yanyana birleştiriyoruz
+            # İşlenmiş verileri birleştir
             train_arr = np.c_[input_feature_train_arr, np.array(target_feature_train_df)]
             test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
 
+            # ✅ save_object fonksiyonundaki parametre düzeltildi
             save_object(
                 file_path=self.data_transformation_config.preprocessor_obj_file_path,
-                obj_path=preprocessing_obj
+                obj=preprocessing_obj
             )
 
-            # İşlenmiş array'leri ve preprocessor'ın yolunu döndür
             return (
                 train_arr,
                 test_arr,
                 self.data_transformation_config.preprocessor_obj_file_path
             )
 
-        
         except Exception as e:
             logging.error(f"Veri dönüşümü sırasında hata: {e}")
             raise CustomException(e, sys)
+
+
+if __name__ == "__main__":
+    obj = dataTransformation()
+    print("Veri dönüşüm nesnesi oluşturuldu ✅")
+
+    # Güncellenmiş CSV yolu
+    train_path = "artifacts/train.csv"
+    test_path = "artifacts/test.csv"  # Eğer test verisi ayrı değilse aynı dosyayı kullanabilirsin
+
+    # Veri dönüşümünü başlat
+    train_arr, test_arr, preprocessor_path = obj.initiate_data_transformation(train_path, test_path)
+
+    print("Veri dönüşümü tamamlandı ✅")
+    print(f"Ön işleyici kaydedildi: {preprocessor_path}")
+    print(f"Eğitim verisi boyutu: {train_arr.shape}")
+    print(f"Test verisi boyutu: {test_arr.shape}")

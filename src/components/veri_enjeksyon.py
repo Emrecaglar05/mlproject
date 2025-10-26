@@ -10,6 +10,8 @@ from dataclasses import dataclass  # Veri sınıfları oluşturmak için kullan�
 from src.components.veri_dönüşümü import dataTransformation
 from src.components.veri_dönüşümü import dataTransformationConfig
 
+from src.components.model_egitimi import ModelTrainerConfig
+from src.components.model_egitimi import ModelTrainer
 
 
 # Veri enjeksiyonu adımı için gerekli dosya yollarını tutan bir konfigürasyon sınıfı
@@ -79,4 +81,16 @@ class data_enjeksyon:
 
 if __name__=="__main__":
     obj=data_enjeksyon()
-    obj.initiate_data_enjeksyon()
+    train_data,test_data=obj.initiate_data_enjeksyon()
+
+    data_transformation=dataTransformation()
+    
+    # 1. Düzeltme: '_' yerine anlamlı bir değişken adı kullanıyoruz
+    train_arr,test_arr,preprocessor_file_path=data_transformation.initiate_data_transformation(train_data,test_data)
+
+    modeltrainer=ModelTrainer()
+    
+    # 2. Düzeltme: Yakaladığımız 'preprocessor_file_path' değişkenini fonksiyona veriyoruz
+    print(modeltrainer.initiate_model_trainer(train_arr,test_arr,preprocessor_file_path))
+
+    
